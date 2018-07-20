@@ -27,9 +27,12 @@ type KLineReturn struct {
 type TokenPrice struct {
     Id              int64
     Name         string
+    Pair         string
     Open         float64
     Close        float64
+    CloseS       string
     FloatPercent string
+    Fluctuation string
 }
 
 func (t *TokenPrice) TableName() string {

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"time"
+	"strings"
 
 	"github.com/astaxie/beego/orm"
     _ "github.com/go-sql-driver/mysql"
@@ -13,28 +14,34 @@ import (
 
 const EPSINON = 0.0000001
 
-var tokenMap = map[int64]string{
-    1: "btcusdt",
-    2: "ethusdt",
-    3: "eosusdt",
-    4: "htusdt",
-    5: "ltcusdt",
-    6: "xrpusdt",
-    7: "dashusdt",
-    8: "etcusdt",
+type transactionPair struct {
+	name string
+	pair string
 }
 
-func getTokenPrice(name string) models.TokenPrice {
-	htKLine := services.GetKLine(name, "1day", 1)
+var tokenMap = map[int64]transactionPair{
+    1: transactionPair{"BTC", "btcusdt"},
+    2: transactionPair{"ETH", "ethusdt"},
+    3: transactionPair{"EOS", "eosusdt"},
+    4: transactionPair{"HT", "htusdt"},
+    5: transactionPair{"LTC", "ltcusdt"},
+    6: transactionPair{"XRP", "xrpusdt"},
+    7: transactionPair{"DASH", "dashusdt"},
+    8: transactionPair{"ETC", "etcusdt"},
+}
+
+func getTokenPrice(pair transactionPair) models.TokenPrice {
+	htKLine := services.GetKLine(pair.pair, "1day", 1)
 	if htKLine.Status != "ok" {
-		fmt.Printf("get %s failed", name)
+		fmt.Printf("get %s failed", pair.pair)
 		return models.TokenPrice{}
 	}
 
 	kLineData := htKLine.Data[0]
 
 	token := models.TokenPrice{
-		Name:  name,
+		Name:  pair.name,
+		Pair:  pair.pair,
 		Open:  kLineData.Open,
 		Close: kLineData.Close,
 	}
@@ -44,10 +51,16 @@ func getTokenPrice(name string) models.TokenPrice {
 		return models.TokenPrice{}
 	}
 
+	token.CloseS = fmt.Sprintf("%0.2f", token.Close)
 	floatPercent := ((token.Close - token.Open) / token.Open) * 100
 	floatPercentS := fmt.Sprintf("%0.2f", floatPercent)
 	token.FloatPercent = floatPercentS
-	fmt.Printf("%s float %0.2f \n", name, floatPercent)
+	if strings.Contains(token.FloatPercent, "-") {
+		token.Fluctuation = "negative"
+	} else {
+		token.Fluctuation = "positive"
+	}
+	//fmt.Printf("%s float %0.2f \n", pair.name, floatPercent)
 
 	return token
 }
@@ -65,7 +78,8 @@ func main() {
 	for id, tokenName := range tokenMap {
         tokenPrice := models.TokenPrice {
             Id: id,
-            Name: tokenName,
+            Name: tokenName.name,
+            Pair: tokenName.pair,
         }
 		err := tokenPrice.Insert()
 		if err != nil {
@@ -81,17 +95,19 @@ func main() {
 			t.Reset(1 * time.Minute)
 			for id, tokenName := range tokenMap {
 				token := getTokenPrice(tokenName)
-				tokenPriceMap[tokenName] = token
+				tokenPriceMap[tokenName.name] = token
 				token.Id = id
-				err := token.Update("name", "open", "close", "float_percent")
+				err := token.Update("name", "pair", "open", "close", "close_s", "float_percent", "fluctuation")
 				if err != nil {
 					fmt.Println("update %s failed, err: %s", tokenName, err)
 				}
 			}
 
+			/*
 			for name, tokenPrice := range tokenPriceMap {
 				fmt.Printf("%s float %s \n", name, tokenPrice.FloatPercent)
 			}
+			*/
 		}
 	}
 }
