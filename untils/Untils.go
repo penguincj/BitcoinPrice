@@ -19,7 +19,7 @@ import (
 // strUrl: 请求的URL
 // strParams: string类型的请求参数, user=lxz&pwd=lxz
 // return: 请求结果
-func HttpGetRequest(strUrl string, mapParams map[string]string) string {
+func HttpGetRequest(strUrl string, mapParams map[string]string) (string, error) {
 
 	httpClient := &http.Client{}
 
@@ -35,24 +35,24 @@ func HttpGetRequest(strUrl string, mapParams map[string]string) string {
 	// 构建Request, 并且按官方要求添加Http Header
 	request, err := http.NewRequest("GET", strRequestUrl, nil)
 	if nil != err {
-		return err.Error()
+		return "", err
 	}
 	request.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36")
 
 	// 发出请求
 	response, err := httpClient.Do(request)
-	defer response.Body.Close()
 	if nil != err {
-		return err.Error()
+		return "", err
 	}
 
+	defer response.Body.Close()
 	// 解析响应内容
 	body, err := ioutil.ReadAll(response.Body)
 	if nil != err {
-		return err.Error()
+		return "", err
 	}
 
-	return string(body)
+	return string(body), err
 }
 
 // Http POST请求基础函数, 通过封装Go语言Http请求, 支持火币网REST API的HTTP POST请求
@@ -107,7 +107,8 @@ func ApiKeyGet(mapParams map[string]string, strRequestPath string) string {
 	mapParams["Signature"] = CreateSign(mapParams, strMethod, hostName, strRequestPath, config.SECRET_KEY)
 
 	strUrl := config.TRADE_URL + strRequestPath
-	return HttpGetRequest(strUrl, MapValueEncodeURI(mapParams))
+	response, _ := HttpGetRequest(strUrl, MapValueEncodeURI(mapParams))
+	return response
 }
 
 // 进行签名后的HTTP POST请求, 参考官方Python Demo写的

@@ -30,11 +30,14 @@ var tokenMap = map[int64]transactionPair{
     8: transactionPair{"ETC", "etcusdt"},
 }
 
-func getTokenPrice(pair transactionPair) models.TokenPrice {
-	htKLine := services.GetKLine(pair.pair, "1day", 1)
+func getTokenPrice(pair transactionPair) (models.TokenPrice, error) {
+	htKLine, err := services.GetKLine(pair.pair, "1day", 1)
+	if err != nil {
+		return models.TokenPrice{}, err
+	}
 	if htKLine.Status != "ok" {
 		fmt.Printf("get %s failed", pair.pair)
-		return models.TokenPrice{}
+		return models.TokenPrice{}, err
 	}
 
 	kLineData := htKLine.Data[0]
@@ -48,7 +51,7 @@ func getTokenPrice(pair transactionPair) models.TokenPrice {
 
 	if (token.Open >= -EPSINON) && (token.Open <= EPSINON) {
 		fmt.Println("open price is zero")
-		return models.TokenPrice{}
+		return models.TokenPrice{}, err
 	}
 
 	token.CloseS = fmt.Sprintf("%0.2f", token.Close)
@@ -62,12 +65,7 @@ func getTokenPrice(pair transactionPair) models.TokenPrice {
 	}
 	//fmt.Printf("%s float %0.2f \n", pair.name, floatPercent)
 
-	return token
-}
-
-type Profile struct {
-    Id          int
-    Age         int16
+	return token, err
 }
 
 func main() {
@@ -94,10 +92,13 @@ func main() {
 		case <-t.C:
 			t.Reset(1 * time.Minute)
 			for id, tokenName := range tokenMap {
-				token := getTokenPrice(tokenName)
+				token, err := getTokenPrice(tokenName)
+				if err != nil {
+					continue
+				}
 				tokenPriceMap[tokenName.name] = token
 				token.Id = id
-				err := token.Update("name", "pair", "open", "close", "close_s", "float_percent", "fluctuation")
+				err = token.Update("name", "pair", "open", "close", "close_s", "float_percent", "fluctuation")
 				if err != nil {
 					fmt.Println("update %s failed, err: %s", tokenName, err)
 				}
@@ -113,7 +114,6 @@ func main() {
 }
 
 func init() {
-    orm.RegisterModel(new(Profile))
     orm.RegisterDriver("mysql", orm.DRMySQL)
 
     orm.RegisterDataBase("default", "mysql", "root:mysqlroot@/airdrop?charset=utf8")

@@ -20,7 +20,7 @@ import (
 // strPeriod: K线类型, 1min, 5min, 15min......
 // nSize: 获取数量, [1-2000]
 // return: KLineReturn 对象
-func GetKLine(strSymbol, strPeriod string, nSize int) models.KLineReturn {
+func GetKLine(strSymbol, strPeriod string, nSize int) (models.KLineReturn, error) {
 	kLineReturn := models.KLineReturn{}
 
 	mapParams := make(map[string]string)
@@ -31,10 +31,13 @@ func GetKLine(strSymbol, strPeriod string, nSize int) models.KLineReturn {
 	strRequestUrl := "/market/history/kline"
 	strUrl := config.MARKET_URL + strRequestUrl
 
-	jsonKLineReturn := untils.HttpGetRequest(strUrl, mapParams)
+	jsonKLineReturn, err := untils.HttpGetRequest(strUrl, mapParams)
+	if err != nil {
+		return kLineReturn, err
+	}
 	json.Unmarshal([]byte(jsonKLineReturn), &kLineReturn)
 
-	return kLineReturn
+	return kLineReturn, nil
 }
 
 // 获取聚合行情
@@ -49,7 +52,7 @@ func GetTicker(strSymbol string) models.TickerReturn {
 	strRequestUrl := "/market/detail/merged"
 	strUrl := config.MARKET_URL + strRequestUrl
 
-	jsonTickReturn := untils.HttpGetRequest(strUrl, mapParams)
+	jsonTickReturn, _ := untils.HttpGetRequest(strUrl, mapParams)
 	json.Unmarshal([]byte(jsonTickReturn), &tickerReturn)
 
 	return tickerReturn
@@ -69,7 +72,7 @@ func GetMarketDepth(strSymbol, strType string) models.MarketDepthReturn {
 	strRequestUrl := "/market/depth"
 	strUrl := config.MARKET_URL + strRequestUrl
 
-	jsonMarketDepthReturn := untils.HttpGetRequest(strUrl, mapParams)
+	jsonMarketDepthReturn, _ := untils.HttpGetRequest(strUrl, mapParams)
 	json.Unmarshal([]byte(jsonMarketDepthReturn), &marketDepthReturn)
 
 	return marketDepthReturn
@@ -87,7 +90,7 @@ func GetTradeDetail(strSymbol string) models.TradeDetailReturn {
 	strRequestUrl := "/market/trade"
 	strUrl := config.MARKET_URL + strRequestUrl
 
-	jsonTradeDetailReturn := untils.HttpGetRequest(strUrl, mapParams)
+	jsonTradeDetailReturn, _ := untils.HttpGetRequest(strUrl, mapParams)
 	json.Unmarshal([]byte(jsonTradeDetailReturn), &tradeDetailReturn)
 
 	return tradeDetailReturn
@@ -107,7 +110,7 @@ func GetTrade(strSymbol string, nSize int) models.TradeReturn {
 	strRequestUrl := "/market/history/trade"
 	strUrl := config.MARKET_URL + strRequestUrl
 
-	jsonTradeReturn := untils.HttpGetRequest(strUrl, mapParams)
+	jsonTradeReturn, _ := untils.HttpGetRequest(strUrl, mapParams)
 	json.Unmarshal([]byte(jsonTradeReturn), &tradeReturn)
 
 	return tradeReturn
@@ -125,7 +128,7 @@ func GetMarketDetail(strSymbol string) models.MarketDetailReturn {
 	strRequestUrl := "/market/detail"
 	strUrl := config.MARKET_URL + strRequestUrl
 
-	jsonMarketDetailReturn := untils.HttpGetRequest(strUrl, mapParams)
+	jsonMarketDetailReturn, _ := untils.HttpGetRequest(strUrl, mapParams)
 	json.Unmarshal([]byte(jsonMarketDetailReturn), &marketDetailReturn)
 
 	return marketDetailReturn
@@ -142,7 +145,7 @@ func GetSymbols() models.SymbolsReturn {
 	strRequestUrl := "/v1/common/symbols"
 	strUrl := config.TRADE_URL + strRequestUrl
 
-	jsonSymbolsReturn := untils.HttpGetRequest(strUrl, nil)
+	jsonSymbolsReturn, _ := untils.HttpGetRequest(strUrl, nil)
 	json.Unmarshal([]byte(jsonSymbolsReturn), &symbolsReturn)
 
 	return symbolsReturn
@@ -156,7 +159,7 @@ func GetCurrencys() models.CurrencysReturn {
 	strRequestUrl := "/v1/common/currencys"
 	strUrl := config.TRADE_URL + strRequestUrl
 
-	jsonCurrencysReturn := untils.HttpGetRequest(strUrl, nil)
+	jsonCurrencysReturn, _ := untils.HttpGetRequest(strUrl, nil)
 	json.Unmarshal([]byte(jsonCurrencysReturn), &currencysReturn)
 
 	return currencysReturn
@@ -170,7 +173,7 @@ func GetTimestamp() models.TimestampReturn {
 	strRequest := "/v1/common/timestamp"
 	strUrl := config.TRADE_URL + strRequest
 
-	jsonTimestampReturn := untils.HttpGetRequest(strUrl, nil)
+	jsonTimestampReturn, _ := untils.HttpGetRequest(strUrl, nil)
 	json.Unmarshal([]byte(jsonTimestampReturn), &timestampReturn)
 
 	return timestampReturn
